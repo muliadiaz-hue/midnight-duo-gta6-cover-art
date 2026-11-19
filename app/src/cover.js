@@ -30,6 +30,7 @@ export async function ensureFonts() {
     await Promise.all([
       document.fonts.load('100px Anton'),
       document.fonts.load('40px Pacifico'),
+      document.fonts.load('100px "Passion One"'),
       document.fonts.ready,
     ]);
   } catch (err) {
@@ -171,12 +172,36 @@ function paintPanel(ctx, photo, rect, grade) {
   ctx.restore();
 }
 
+// Sunset-gradient title fill (GTA VI logo treatment): vertical gradient
+// violet -> magenta -> orange over the glyphs, under a heavy ink outline.
+// Draws with an alphabetic baseline at (cx, y); `size` is the font size.
+function paintGradientTitle(ctx, text, cx, y, size) {
+  ctx.font = `${size}px "Passion One", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round';
+  const m = ctx.measureText(text);
+  const top = y - (m.actualBoundingBoxAscent || size * 0.72);
+  const bottom = y + (m.actualBoundingBoxDescent || size * 0.2);
+  const grad = ctx.createLinearGradient(0, top, 0, bottom);
+  grad.addColorStop(0, '#7b2ff7');
+  grad.addColorStop(0.5, '#e0218a');
+  grad.addColorStop(1, '#ff9a3d');
+  ctx.strokeStyle = INK_OUTLINE;
+  ctx.lineWidth = Math.max(4, size * 0.13);
+  ctx.strokeText(text, cx, y);
+  ctx.fillStyle = grad;
+  ctx.fillText(text, cx, y);
+}
+
 // The Version D title block: hero-local dark scrim, city line flanked by
-// drawn stars, stacked MIDNIGHT / DUO, yellow tagline underneath.
+// drawn stars, ONE-LINE "MIDNIGHT DUO" in Passion One with the sunset
+// gradient, yellow tagline underneath.
 function paintBandTitle(ctx, state, w, h, hero) {
   const rect = titleRect('band', w, h);
   // Scrim: transparent at the top of the block, deep violet-black at the
-  // bottom, hero width only — the right panels stay untouched.
+  // bottom, hero width only — the right panels stay untouched. The visible
+  // dark starts at ~73% of the height (0.45 through the block).
   const scrim = ctx.createLinearGradient(0, rect.y, 0, h);
   scrim.addColorStop(0, 'rgba(16,2,40,0)');
   scrim.addColorStop(0.45, 'rgba(16,2,40,0.55)');
@@ -185,11 +210,7 @@ function paintBandTitle(ctx, state, w, h, hero) {
   ctx.fillRect(hero.x, rect.y, hero.w, h - rect.y);
 
   const caption = (state.caption || 'MIDNIGHT DUO').toUpperCase();
-  const words = caption.split(/\s+/).filter(Boolean);
-  const line1 = words[0] || 'MIDNIGHT';
-  const line2 = words.slice(1).join(' ') || 'DUO';
-  const maxW = hero.w * 0.88;
-  const base = Math.min(hero.w * 0.19, h * 0.16);
+  const maxW = hero.w * 0.85;
 
   const city = (state.city || 'AZURA BAY').toUpperCase();
   const citySize = Math.max(14, Math.round(h * 0.026));
@@ -199,29 +220,18 @@ function paintBandTitle(ctx, state, w, h, hero) {
   drawStar(ctx, hero.x + hero.w / 2 - cityW / 2 - starR * 1.9, cityY - citySize * 0.32, starR, CITY_PINK);
   drawStar(ctx, hero.x + hero.w / 2 + cityW / 2 + starR * 1.9, cityY - citySize * 0.32, starR, CITY_PINK);
 
-  const size1 = fitSize(ctx, line1, base, maxW, 'Anton, sans-serif');
-  const size2 = fitSize(ctx, line2, base, maxW, 'Anton, sans-serif');
   // Anchor the block from the bottom up so the tagline never falls off
-  // the canvas: tagline near the bottom edge, two title lines above it,
-  // city line above those. Size is capped by the vertical room as well
-  // as by the hero width.
+  // the canvas: tagline near the bottom edge, one title line above it,
+  // city line above that. Size is capped by the hero width (~85%) as well
+  // as by the vertical room between the city line and the tagline.
   const tagSize = Math.max(12, Math.round(h * 0.02));
   const tagY = Math.round(h * 0.955);
-  const size = Math.min(size1, size2, Math.floor((tagY - cityY) / 2.75));
-  const lineH = size * 1.0;
-  const line2Base = tagY - tagSize * 2.0;
-  const line1Base = line2Base - lineH;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  ctx.lineJoin = 'round';
-  ctx.font = `${size}px Anton, sans-serif`;
-  ctx.strokeStyle = INK_OUTLINE;
-  ctx.lineWidth = Math.max(4, size * 0.13);
-  ctx.strokeText(line1, hero.x + hero.w / 2, line1Base);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(line1, hero.x + hero.w / 2, line1Base);
-  ctx.strokeText(line2, hero.x + hero.w / 2, line2Base);
-  ctx.fillText(line2, hero.x + hero.w / 2, line2Base);
+  const titleBase = tagY - tagSize * 2.0;
+  const base = Math.min(hero.w * 0.19, h * 0.16);
+  let size = fitSize(ctx, caption, base, maxW, '"Passion One", sans-serif');
+  const vRoom = titleBase - cityY - citySize * 0.5;
+  size = Math.min(size, Math.floor(vRoom / 0.95));
+  paintGradientTitle(ctx, caption, hero.x + hero.w / 2, titleBase, size);
 
   const tag = (state.subtitle || 'Two leads · One score').toUpperCase();
   // Shrink the tagline until its tracked width fits the hero (narrow
@@ -247,20 +257,16 @@ function paintCentreTitle(ctx, state, w, h) {
   ctx.fillStyle = grad;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
   const caption = (state.caption || 'MIDNIGHT DUO').toUpperCase();
-  const size = fitSize(ctx, caption, rect.w * 0.2, rect.w * 0.9, 'Anton, sans-serif');
-  ctx.font = `${size}px Anton, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = INK_OUTLINE;
-  ctx.lineWidth = Math.max(3, size * 0.12);
-  ctx.strokeText(caption, rect.x + rect.w / 2, rect.y + rect.h * 0.44);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(caption, rect.x + rect.w / 2, rect.y + rect.h * 0.44);
+  const size = fitSize(ctx, caption, rect.w * 0.2, rect.w * 0.9, '"Passion One", sans-serif');
+  // Same Passion One sunset-gradient treatment as the band title; the
+  // middle-baseline centre is converted to an alphabetic baseline.
+  paintGradientTitle(ctx, caption, rect.x + rect.w / 2, rect.y + rect.h * 0.44 + size * 0.36, size);
   const sub = state.subtitle || '';
   if (sub) {
     const subSize = Math.max(10, Math.round(rect.h * 0.09));
     ctx.font = `${subSize}px Pacifico, cursive`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = TAG_YELLOW;
     ctx.fillText(sub, rect.x + rect.w / 2, rect.y + rect.h * 0.74);
   }
@@ -275,16 +281,9 @@ function paintBottomBand(ctx, state, w, h) {
   ctx.fillStyle = grad;
   ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
   const caption = (state.caption || 'MIDNIGHT DUO').toUpperCase();
-  const size = fitSize(ctx, caption, rect.h * 0.5, rect.w * 0.9, 'Anton, sans-serif');
-  ctx.font = `${size}px Anton, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = INK_OUTLINE;
-  ctx.lineWidth = Math.max(3, size * 0.12);
-  ctx.strokeText(caption, rect.x + rect.w / 2, rect.y + rect.h * 0.46);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(caption, rect.x + rect.w / 2, rect.y + rect.h * 0.46);
+  const size = fitSize(ctx, caption, rect.h * 0.5, rect.w * 0.9, '"Passion One", sans-serif');
+  // Same Passion One sunset-gradient treatment as the band title.
+  paintGradientTitle(ctx, caption, rect.x + rect.w / 2, rect.y + rect.h * 0.46 + size * 0.36, size);
   const tag = (state.subtitle || '').toUpperCase();
   if (tag) {
     drawTracked(ctx, tag, rect.x + rect.w / 2, rect.y + rect.h * 0.82, size * 0.08, 'Anton, sans-serif', Math.max(10, size * 0.22), TAG_YELLOW, null, 0);
@@ -363,19 +362,12 @@ export function drawCover(ctx, state, w, h) {
     ctx.fillRect(-w, -bandH / 2, w * 2, bandH);
     ctx.restore();
     const caption = (state.caption || 'MIDNIGHT DUO').toUpperCase();
-    const size = fitSize(ctx, caption, bandH * 0.7, w * 0.7, 'Anton, sans-serif');
+    const size = fitSize(ctx, caption, bandH * 0.7, w * 0.7, '"Passion One", sans-serif');
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.rotate(-0.12);
-    ctx.font = `${size}px Anton, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = INK_OUTLINE;
-    ctx.lineWidth = Math.max(3, size * 0.12);
-    ctx.strokeText(caption, 0, 0);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(caption, 0, 0);
+    // Same Passion One sunset-gradient treatment as the band title.
+    paintGradientTitle(ctx, caption, 0, size * 0.36, size);
     ctx.restore();
   } else if (layout === 'strip') {
     drawStarburst(ctx, w * 0.5, h * 0.5, Math.max(30, h * 0.08), (state.caption || 'MIDNIGHT').split(' ')[0], 'DUO');
