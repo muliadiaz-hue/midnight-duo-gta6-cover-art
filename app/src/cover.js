@@ -135,23 +135,6 @@ function drawSash(ctx, hero, text) {
   ctx.restore();
 }
 
-// Pink circle badge with white ring.
-function drawNewBadge(ctx, cx, cy, r) {
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = BADGE_PINK;
-  ctx.fill();
-  ctx.lineWidth = Math.max(2, r * 0.12);
-  ctx.strokeStyle = '#ffffff';
-  ctx.stroke();
-  const size = r * 0.72;
-  ctx.font = `${size}px Anton, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('NEW', cx, cy + size * 0.04);
-}
-
 // Draw one photo into a panel rect, cover-fit, with the panel's zoom/pan,
 // then run the grade over the panel pixels.
 function paintPanel(ctx, photo, rect, grade) {
@@ -367,13 +350,6 @@ export function drawCover(ctx, state, w, h) {
     const hero = panels[0];
     paintBandTitle(ctx, state, w, h, hero);
     drawSash(ctx, hero, 'ONE NIGHT ONLY');
-    const seamX = hero.w;
-    // Radius scales with the HERO width too: on tall sizes (portrait /
-    // story) a height-only radius balloons and swallows the city line.
-    // Height 0.44 keeps the badge clear of the city line below it.
-    const burstR = Math.max(26, Math.min(h * 0.075, hero.w * 0.16));
-    drawStarburst(ctx, seamX, h * 0.44, burstR, 'EST.', '2026');
-    drawNewBadge(ctx, w - Math.max(22, h * 0.05), h - Math.max(22, h * 0.05), Math.max(20, h * 0.042));
   } else if (layout === 'nine') {
     paintCentreTitle(ctx, state, w, h);
   } else if (layout === 'bleed') {
