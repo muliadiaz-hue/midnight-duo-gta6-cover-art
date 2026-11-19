@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Midnight Duo — GTA 6-style cover maker</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  @font-face { font-family: 'Anton'; src: url('fonts/Anton-Regular.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'Pacifico'; src: url('fonts/Pacifico-Regular.ttf') format('truetype'); font-display: swap; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <h1>MIDNIGHT DUO</h1>
+    <p>Turn your photos into a neon-night cover</p>
+  </div>
+  <div class="top-actions">
+    <button id="undoBtn" type="button" title="Undo">Undo</button>
+    <button id="redoBtn" type="button" title="Redo">Redo</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="stage">
+    <canvas id="coverCanvas" width="880" height="495"></canvas>
+    <p id="sizeLabel" class="size-label"></p>
+    <p class="hint">Click a tray photo to make it the hero. Drag the cover to pan the hero photo, scroll to zoom.</p>
+  </section>
+
+  <aside class="panel">
+    <h2>Photos</h2>
+    <div id="tray" class="tray"></div>
+    <label class="upload">
+      <span>Add your own photo</span>
+      <input id="uploadInput" type="file" accept="image/*">
+    </label>
+
+    <h2>Words</h2>
+    <label class="field">Title
+      <input id="captionInput" type="text" value="MIDNIGHT DUO" maxlength="40">
+    </label>
+    <label class="field">Tagline
+      <input id="subtitleInput" type="text" value="Two leads · One score" maxlength="60">
+    </label>
+    <label class="field">City
+      <input id="cityInput" type="text" value="AZURA BAY" maxlength="30">
+    </label>
+
+    <h2>Layout</h2>
+    <div id="layoutBtns" class="btn-row"></div>
+
+    <h2>Grade</h2>
+    <div id="gradeBtns" class="btn-row"></div>
+
+    <h2>Post size</h2>
+    <div id="sizeBtns" class="btn-row"></div>
+
+    <h2>Export PNG</h2>
+    <div class="btn-row">
+      <button type="button" data-export="square">Square 1080×1080</button>
+      <button type="button" data-export="portrait">Portrait 1080×1350</button>
+      <button type="button" data-export="wide">Wide 1920×1080</button>
+      <button type="button" data-export="story">Story 1080×1920</button>
+    </div>
+  </aside>
+</main>
+
+<footer class="foot">
+  <p>Midnight Duo — a cover maker for the make.fun bounty
+    <a href="https://make.fun/bounty/gta6-cover-art-01">gta6-cover-art-01</a>.
+    Fully offline: your photos never leave this page. Fonts: Anton + Pacifico (SIL OFL).</p>
+</footer>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
